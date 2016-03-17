@@ -1,0 +1,11 @@
+{
+    "name": "hulucat/wechat-corp",
+    "authors": [
+        {
+            "name": "wangzheng",
+            "email": "wangzheng@hulucat.net"
+        }
+    ],
+    "minimum-stability": "dev",
+    "require": {}
+}
