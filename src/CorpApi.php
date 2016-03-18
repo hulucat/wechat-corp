@@ -21,13 +21,37 @@ class CorpApi{
 		$this->http = $hc;
 	}
 	
+	public function oauth2($backUrl){
+		$redirectUri = array_key_exists('HTTPS', $_SERVER)?'https://':'http://';
+		$redirectUri = urlencode($redirectUri.$_SERVER['SERVER_NAME'].'/corp/oauth2?back='.$backUrl);
+		$url='https://open.weixin.qq.com/connect/oauth2/authorize?appid=';
+		$url .= config('wechat_corp.id');
+		$url .= '&redirect_uri=';
+		$url .= $redirectUri;
+		$url .= '&response_type=code&scope=snsapi_base#wechat_redirect';
+		header("Location: $url", true, 302);
+	}
+
+	public function getUserId($code){
+		$body = $this->httpGet('https://qyapi.weixin.qq.com/cgi-bin/user/getuserinfo', [
+			'access_token' => $this->getAccessToken(),
+			'code' => $code,
+		]);
+		$rt = json_decode($body);
+		if(property_exists($rt, 'UserId')){
+			return $rt->UserId;
+		}else{
+			return null;
+		}
+	}
+
 	public function getAccessToken(){
 		$cacheKey = 'wechat_corp_access_token';
 		$at = \Cache::get($cacheKey);
 		if(!$at){
 			$body = $this->httpGet('https://qyapi.weixin.qq.com/cgi-bin/gettoken', [
-					'corpid'=>config('wechat_corp.wechat_corp_id'),
-					'corpsecret'=>config('wechat_corp.wechat_corp_secret')
+					'corpid'=>config('wechat_corp.id'),
+					'corpsecret'=>config('wechat_corp.secret')
 			]);
 			$rt = json_decode($body);
 			if(property_exists($rt, 'access_token')){
@@ -72,6 +96,10 @@ class CorpApi{
 	}
 	
 	protected function httpGet($url, Array $query){
+		\Log::debug("WechatCorp: ", [
+			'Request: ' => $url,
+			'Params: ' => $query,
+		]);
 		$response = $this->http->request('GET', $url, ['query' => $query]);
 		\Log::debug('WechatCorp:', [
 				'Status' => $response->getStatusCode(),

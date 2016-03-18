@@ -1,5 +1,5 @@
 <?php
 return [
-	'wechat_corp_id' => '123',
-	'wechat_corp_secret' => 'secret_string'
+	'id' => '123',
+	'secret' => 'secret_string',
 ];
