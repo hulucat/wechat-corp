@@ -23,7 +23,7 @@ class CorpApi{
 	
 	public function oauth2($backUrl){
 		$redirectUri = array_key_exists('HTTPS', $_SERVER)?'https://':'http://';
-		$redirectUri = urlencode($redirectUri.$_SERVER['SERVER_NAME'].'/corp/oauth2?back='.$backUrl);
+		$redirectUri = urlencode($redirectUri.config('wechat_corp.app_host').'/corp/oauth2?back='.$backUrl);
 		$url='https://open.weixin.qq.com/connect/oauth2/authorize?appid=';
 		$url .= config('wechat_corp.id');
 		$url .= '&redirect_uri=';
