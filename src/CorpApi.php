@@ -2,6 +2,8 @@
 namespace Hulucat\WechatCorp;
 
 use GuzzleHttp\Client as HttpClient;
+use Cache;
+use Log;
 
 class JsapiConfig{
 	public $nonce;
@@ -32,7 +34,11 @@ class CorpApi{
 		header("Location: $url", true, 302);
 	}
 
-	public function getUserId($code){
+    /** 根据oauth2的code换取用户id
+     * @param $code
+     * @return null
+     */
+    public function getUserId($code){
 		$body = $this->httpGet('https://qyapi.weixin.qq.com/cgi-bin/user/getuserinfo', [
 			'access_token' => $this->getAccessToken(),
 			'code' => $code,
@@ -44,6 +50,76 @@ class CorpApi{
 			return null;
 		}
 	}
+
+    /**根据userId获取用户信息
+     * @param $userId
+     */
+    public function getUser($userId, $refresh=false){
+        $user = null;
+        $cacheKey = "wechat_corp_user_$userId";
+        if($refresh){
+            $user = $this->realGetUser($userId);
+        }else{
+            $user = Cache::get($cacheKey);
+            if(!$user){
+                $user = $this->realGetUser($userId);
+            }else{
+                Log::debug("Get corp user from cache", [
+                    'userId'    => $userId,
+                    'user'      => $user,
+                ]);
+            }
+        }
+        return $user;
+    }
+
+    private function realGetUser($userId){
+        $body = $this->httpGet('https://qyapi.weixin.qq.com/cgi-bin/user/get', [
+            'access_token' => $this->getAccessToken(),
+            'userid' => $userId,
+        ]);
+        $user = json_decode($body);
+        if($user->errcode==0){
+            $cacheKey = "wechat_corp_user_$userId";
+            Cache::put($cacheKey, $user, 60);
+        }
+        Log::debug("Real get user: ", [
+            'userId'=>$userId,
+            "user"=>$user,
+        ]);
+        return $user;
+    }
+
+    /**判断某个企业用户是否在某个部门中
+     * @param $userId
+     * @param $department department id, 1, 2
+     * @return boolean
+     */
+    public function isInDepartment($userId, $department){
+        $user = $this->getUser($userId);
+        if(!$user){
+            return false;
+        }
+        return in_array($department, $user->department);
+    }
+
+    /**取得企业用户的某个扩展属性值
+     * @param $userId
+     * @param $attrName
+     * @return null
+     */
+    public function getUserExtAttr($userId, $attrName){
+        $user = $this->getUser($userId);
+        if(property_exists($user, 'extattr') && property_exists($user->extattr, 'attrs')){
+            foreach ($user->extattr->attrs as $i=>$attr){
+                if($attr->name==$attrName){
+                    return $attr->value;
+                }
+            }
+        }
+        return null;
+
+    }
 
 	public function getAccessToken(){
 		$cacheKey = 'wechat_corp_access_token';

@@ -3,6 +3,7 @@
 namespace Hulucat\WechatCorp;
 
 use Illuminate\Support\ServiceProvider;
+use GuzzleHttp\Client as HttpClient;
 
 class CorpServiceProvider extends ServiceProvider
 {
@@ -30,7 +31,7 @@ class CorpServiceProvider extends ServiceProvider
         include __DIR__.'/routes.php';
         $this->app->make('Hulucat\WechatCorp\CorpController');
         $this->app->singleton('CorpApi', function($app){
-        	return new Hulucat\WechatCorp\CorpApi();
+        	return new CorpApi(new HttpClient());
         });
     }
 }
