@@ -16,6 +16,36 @@ class JsapiConfig{
 	}
 }
 
+abstract class Message{
+	public $touser;
+	public $toparty;
+	public $totag;
+	public $agentid;
+	public $safe;
+}
+
+class Text{
+    public $content;
+
+    public function __construct($content){
+        $this->content = $content;
+    }
+}
+
+class TextMessage extends Message{
+	public $text = '';
+    public $msgtype = 'text';
+
+	public function __construct($toUser, $toParty, $toTag, $agentId, $safe, $textContent){
+		$this->touser = $toUser;
+		$this->toparty = $toParty;
+		$this->totag = $toTag;
+		$this->agentid = $agentId;
+		$this->safe = $safe;
+		$this->text = new Text($textContent);
+	}
+}
+
 class CorpApi{
 	protected $http;
 	
@@ -25,7 +55,7 @@ class CorpApi{
 	
 	public function oauth2($backUrl){
 		$redirectUri = array_key_exists('HTTPS', $_SERVER)?'https://':'http://';
-		$redirectUri = urlencode($redirectUri.config('wechat_corp.app_host').'/corp/oauth2?back='.$backUrl);
+		$redirectUri = urlencode($redirectUri.config('wechat_corp.app_host')."/corp/oauth2?back=$backUrl");
 		$url='https://open.weixin.qq.com/connect/oauth2/authorize?appid=';
 		$url .= config('wechat_corp.id');
 		$url .= '&redirect_uri=';
@@ -170,9 +200,71 @@ class CorpApi{
 		$rt->signature = sha1("jsapi_ticket={$rt->ticket}&noncestr={$rt->nonce}&timestamp={$rt->timestamp}&url=$url");
 		return $rt;
 	}
-	
+
+    /**
+     * @param $departmentId
+     * @param $fetchChild
+     * @param $status
+     * @return mixed
+     * 成功时,返回: "userlist": [
+    {
+    "userid": "zhangsan",
+    "name": "李四",
+    "department": [1, 2]
+    }
+    ]
+     * 失败时,返回: {
+    "errcode": 404,
+    "errmsg": "description",
+     }
+     */
+    public function listSimpleUsers($departmentId, $fetchChild, $status){
+        $body = $this->httpGet('https://qyapi.weixin.qq.com/cgi-bin/user/simplelist', [
+            'access_token'  => $this->getAccessToken(),
+            'department_id' => $departmentId,
+            'fetch_child'   => $fetchChild,
+            'status'        => $status,
+        ]);
+        $body = json_decode($body);
+        if(property_exists($body, 'userlist')){
+            return $body->userlist;
+        }else{
+            return $body;
+        }
+    }
+
+    public function listDepartments($parentId=1){
+        $body = $this->httpGet('https://qyapi.weixin.qq.com/cgi-bin/user/simplelist', [
+            'access_token'  => $this->getAccessToken(),
+            'id' => $parentId,
+        ]);
+        $body = json_decode($body);
+        if(property_exists($body, 'department')){
+            return $body->department;
+        }else{
+            return $body;
+        }
+    }
+
+    /**
+     * @param $toUser 成员ID列表（消息接收者，多个接收者用‘|’分隔，最多支持1000个）。
+     * 特殊情况：指定为@all，则向关注该企业应用的全部成员发送
+     * @param $toParty 部门ID列表，多个接收者用‘|’分隔，最多支持100个。当touser为@all时忽略本参数
+     * @param $toTag 标签ID列表，多个接收者用‘|’分隔。当touser为@all时忽略本参数
+     * @param $agentId 企业应用的id，整型。可在应用的设置页面查看
+     * @param $safe 表示是否是保密消息，0表示否，1表示是，默认0
+     * @param $text 消息内容，最长不超过2048个字节，注意：主页型应用推送的文本消息在微信端最多只显示20个字（包含中英文）
+     * @return
+     */
+	public function sendText($toUser, $toParty, $toTag, $agentId, $safe, $text){
+        $at = $this->getAccessToken();
+        $url = "https://qyapi.weixin.qq.com/cgi-bin/message/send?access_token=$at";
+		$msg = new TextMessage($toUser, $toParty, $toTag, $agentId, $safe, $text);
+        $this->httpPost($url, json_encode($msg, JSON_UNESCAPED_UNICODE));
+	}
+
 	protected function httpGet($url, Array $query){
-		\Log::debug("WechatCorp: ", [
+		\Log::debug("WechatCorp get: ", [
 			'Request: ' => $url,
 			'Params: ' => $query,
 		]);
@@ -185,4 +277,20 @@ class CorpApi{
 		]);
 		return $response->getBody();
 	}
+
+    protected function httpPost($url, $body){
+        Log::debug("WechatCorp post: ", [
+            'Request: ' => $url,
+            'body: ' => $body,
+        ]);
+        $response = $this->http->request('POST', $url, [
+            'body'  => $body
+        ]);
+        Log::debug('WechatCorp:', [
+            'Status' => $response->getStatusCode(),
+            'Reason' => $response->getReasonPhrase(),
+            'Headers' => $response->getHeaders(),
+            'Body' => strval($response->getBody()),
+        ]);
+    }
 }
