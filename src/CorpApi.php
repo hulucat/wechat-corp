@@ -46,6 +46,41 @@ class TextMessage extends Message{
 	}
 }
 
+class News{
+    public $articles;
+    public function __construct($articles){
+        $this->articles = $articles;
+    }
+}
+
+class Article{
+    public $title;
+    public $description;
+    public $url;
+    public $picurl;
+
+    public function __construct($title, $description, $url, $picurl){
+        $this->title = $title;
+        $this->description = $description;
+        $this->url = $url;
+        $this->picurl = $picurl;
+    }
+}
+
+class NewsMessage extends Message{
+    public $news = '';
+    public $msgtype = 'news';
+
+    public function __construct($toUser, $toParty, $toTag, $agentId, $safe, $articles){
+        $this->touser = $toUser;
+        $this->toparty = $toParty;
+        $this->totag = $toTag;
+        $this->agentid = $agentId;
+        $this->safe = $safe;
+        $this->news = new News($articles);
+    }   
+}
+
 class CorpApi{
 	protected $http;
 	
@@ -203,8 +238,9 @@ class CorpApi{
 
     /**
      * @param $departmentId
-     * @param $fetchChild
-     * @param $status
+     * @param $fetchChild 1/0：是否递归获取子部门下面的成员
+     * @param $status: 0获取全部成员，1获取已关注成员列表，2获取禁用成员列表，4获取未关注成员列表。
+     * status可叠加，未填写则默认为4
      * @return mixed
      * 成功时,返回: "userlist": [
     {
@@ -234,7 +270,7 @@ class CorpApi{
     }
 
     public function listDepartments($parentId=1){
-        $body = $this->httpGet('https://qyapi.weixin.qq.com/cgi-bin/user/simplelist', [
+        $body = $this->httpGet('https://qyapi.weixin.qq.com/cgi-bin/department/list', [
             'access_token'  => $this->getAccessToken(),
             'id' => $parentId,
         ]);
@@ -262,6 +298,13 @@ class CorpApi{
 		$msg = new TextMessage($toUser, $toParty, $toTag, $agentId, $safe, $text);
         $this->httpPost($url, json_encode($msg, JSON_UNESCAPED_UNICODE));
 	}
+
+    public function sendNews($toUser, $toParty, $toTag, $agentId, $safe, $articles){
+        $at = $this->getAccessToken();
+        $url = "https://qyapi.weixin.qq.com/cgi-bin/message/send?access_token=$at";
+        $msg = new NewsMessage($toUser, $toParty, $toTag, $agentId, $safe, $articles);
+        $this->httpPost($url, json_encode($msg, JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES));
+    }
 
 	protected function httpGet($url, Array $query){
 		\Log::debug("WechatCorp get: ", [
