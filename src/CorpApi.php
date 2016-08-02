@@ -128,11 +128,6 @@ class CorpApi{
             $user = Cache::get($cacheKey);
             if(!$user){
                 $user = $this->realGetUser($userId);
-            }else{
-                Log::debug("Get corp user from cache", [
-                    'userId'    => $userId,
-                    'user'      => $user,
-                ]);
             }
         }
         return $user;
