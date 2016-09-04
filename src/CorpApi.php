@@ -117,6 +117,17 @@ class CorpApi{
 	}
 
     /**根据userId获取用户信息
+    {
+        "errcode":0,
+        "errmsg":"ok",
+        "userid":"xxx",
+        "name":"xxx",
+        "department":[2],
+        "mobile":"186xxxxxxxx",
+        "gender":"1",
+        "avatar":"http://xxx",
+        "status":1,
+        "extattr":{"attrs":[]}
      * @param $userId
      */
     public function getUser($userId, $refresh=false){
@@ -235,9 +246,9 @@ class CorpApi{
      * @param $departmentId
      * @param $fetchChild 1/0：是否递归获取子部门下面的成员
      * @param $status: 0获取全部成员，1获取已关注成员列表，2获取禁用成员列表，4获取未关注成员列表。
-     * status可叠加，未填写则默认为4
+     * status可叠加
      * @return mixed
-     * 成功时,返回: "userlist": [
+     * 成功时,返回数组: [
     {
     "userid": "zhangsan",
     "name": "李四",
@@ -249,7 +260,7 @@ class CorpApi{
     "errmsg": "description",
      }
      */
-    public function listSimpleUsers($departmentId, $fetchChild, $status){
+    public function listSimpleUsers($departmentId, $fetchChild, $status=0){
         $body = $this->httpGet('https://qyapi.weixin.qq.com/cgi-bin/user/simplelist', [
             'access_token'  => $this->getAccessToken(),
             'department_id' => $departmentId,
@@ -262,6 +273,30 @@ class CorpApi{
         }else{
             return $body;
         }
+    }
+
+    /**
+    * 列出同在一个部门，或者在下一级部门的用户
+    * 如果当前用户属于部门2，则认为是管理员，会列出所有用户
+    */
+    public function listUsersInSameDepartment($userId){
+        $currentUser = $this->getUser($userId);
+        $users = [];
+        foreach ($currentUser->department as $depart) {
+            if($depart==2){
+                return $this->listSimpleUsers(1, true, 0);
+            }
+        }
+        foreach ($currentUser->department as $depart) {
+            
+            $departUsers = $this->listSimpleUsers($depart, true, 0);
+            $users = array_merge($users, $departUsers);
+        }
+        $dict = [];
+        foreach ($users as $i => $user) {
+            $dict[$user->userid] = $user;
+        }
+        return array_values($dict);
     }
 
     public function listDepartments($parentId=1){
