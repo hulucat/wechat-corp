@@ -213,11 +213,11 @@ class CorpApi{
 
 	public function getJsapiTicket(){
 		$cacheKey = 'wechat_corp_jsapi_ticket';
-		$ticket = \Cache::get($cacheKey);
+		$ticket = Cache::get($cacheKey);
 		$at = $this->getAccessToken();
 		if($ticket){
 			//检查这个ticket是不是应该过期了
-			$oldAccessToken = \Cache::get('wechat_corp_'.md5($ticket));
+			$oldAccessToken = Cache::get('wechat_corp_'.md5($ticket));
 			if($oldAccessToken==$at){//如果access token没有更新，那么缓存中的ticket就可以用
 				return $ticket;
 			}
@@ -228,7 +228,8 @@ class CorpApi{
 		$rt = json_decode($body);
 		if(property_exists($rt, 'ticket')){
 			$ticket = $rt->ticket;
-			\Cache::put($cacheKey, $ticket, 110);
+			Cache::put($cacheKey, $ticket, 110);
+            Cache::put('wechat_corp_'.md5($ticket), $at, 110);
 		}else{
 			$ticket = null;
 		}
@@ -261,17 +262,25 @@ class CorpApi{
      }
      */
     public function listSimpleUsers($departmentId, $fetchChild, $status=0){
-        $body = $this->httpGet('https://qyapi.weixin.qq.com/cgi-bin/user/simplelist', [
-            'access_token'  => $this->getAccessToken(),
-            'department_id' => $departmentId,
-            'fetch_child'   => $fetchChild,
-            'status'        => $status,
-        ]);
-        $body = json_decode($body);
-        if(property_exists($body, 'userlist')){
-            return $body->userlist;
+        $cacheKey = "SIMPLE_USER_LIST_{$departmentId}_{$fetchChild}_{$status}";
+        $str = Cache::get($cacheKey);
+        if($str){
+            Log::debug("Load simple users from cache");
+            return json_decode($str);
         }else{
-            return $body;
+            $body = $this->httpGet('https://qyapi.weixin.qq.com/cgi-bin/user/simplelist', [
+                'access_token'  => $this->getAccessToken(),
+                'department_id' => $departmentId,
+                'fetch_child'   => $fetchChild,
+                'status'        => $status,
+            ]);
+            $body = json_decode($body);
+            if(property_exists($body, 'userlist')){
+                Cache::put($cacheKey, json_encode($body->userlist), 60);
+                return $body->userlist;
+            }else{
+                return $body;
+            }            
         }
     }
 
