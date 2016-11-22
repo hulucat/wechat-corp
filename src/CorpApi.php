@@ -431,7 +431,7 @@ class CorpApi
     {
         $url = "https://api.mch.weixin.qq.com/mmpaymkttransfers/promotion/transfers";
         //sign
-        $params['mch_appid'] = config('wechat_corp.mch_app_id');
+        $params['mch_appid'] = config('wechat_corp.id');
         $params['mchid'] = config('wechat_corp.mch_id');
         $params['nonce_str'] = $this->getNonceStr();
         $params['spbill_create_ip'] = $_SERVER['SERVER_ADDR'];
