@@ -434,7 +434,7 @@ class CorpApi
         $params['mch_appid'] = config('wechat_corp.mch_app_id');
         $params['mchid'] = config('wechat_corp.mch_id');
         $params['nonce_str'] = $this->getNonceStr();
-        $params['spbill_create_ip'] = $SERVER['SERVER_ADDR'];
+        $params['spbill_create_ip'] = $_SERVER['SERVER_ADDR'];
         $params['sign'] = $this->sign($params);
         $xml = $this->toXml($params);
         $result = $this->fromXml($this->postXml($xml, $url, true));
