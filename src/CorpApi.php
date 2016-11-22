@@ -116,11 +116,17 @@ class CorpApi
     * @param $agentId 整型，需要发送红包的应用ID，若只是使用微信支付和企业转账，则无需该参数
     * @return array['openid': 'abc', 'appid':'123']，如未传agentId，则无appid，错误时返回null
     */
-    public function convertToOpenid($userId, $agentId)
+    public function convertToOpenid($userId, $agentId=null)
     {
         $accessToken = $this->getAccessToken();
         $url = "https://qyapi.weixin.qq.com/cgi-bin/user/convert_to_openid?access_token=$accessToken";
-        $body = $this->httpPost($url, "{\"userid\": \"$userId\", \"agentid\":\"$agentId\"}");
+        $content = null;
+        if($agentId==null){
+            $content = "{\"userid\": \"$userId\"}";
+        }else{
+            $content = "{\"userid\": \"$userId\", \"agentid\":\"$agentId\"}";
+        }
+        $body = $this->httpPost($url, $content);
         $data = json_decode($body);
         $rt = [];
         if(property_exists($data, 'openid') && $data->openid){
