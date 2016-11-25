@@ -380,7 +380,8 @@ class CorpApi
         $url .= '&redirect_uri=';
         $url .= $redirectUri;
         $url .= '&response_type=code&scope=snsapi_base#wechat_redirect';
-        header("Location: $url", true, 302);
+        return $url;
+        //header("Location: $url", true, 302);
     }
 
     /**
