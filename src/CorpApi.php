@@ -414,35 +414,35 @@ class CorpApi
 
 	protected function httpGet($url, Array $query)
     {
-		Log::debug("WechatCorp get: ", [
-			'Request: ' => $url,
-			'Params: ' => $query,
-		]);
+		// Log::debug("WechatCorp get: ", [
+		// 	'Request: ' => $url,
+		// 	'Params: ' => $query,
+		// ]);
 		$response = $this->http->request('GET', $url, ['query' => $query]);
-		Log::debug('WechatCorp:', [
-				'Status' => $response->getStatusCode(),
-				'Reason' => $response->getReasonPhrase(),
-				'Headers' => $response->getHeaders(),
-				'Body' => strval($response->getBody()),
-		]);
+		// Log::debug('WechatCorp:', [
+		// 		'Status' => $response->getStatusCode(),
+		// 		'Reason' => $response->getReasonPhrase(),
+		// 		'Headers' => $response->getHeaders(),
+		// 		'Body' => strval($response->getBody()),
+		// ]);
 		return $response->getBody();
 	}
 
     protected function httpPost($url, $body)
     {
-        Log::debug("WechatCorp post: ", [
-            'Request: ' => $url,
-            'body: ' => $body,
-        ]);
+        // Log::debug("WechatCorp post: ", [
+        //     'Request: ' => $url,
+        //     'body: ' => $body,
+        // ]);
         $response = $this->http->request('POST', $url, [
             'body'  => $body
         ]);
-        Log::debug('WechatCorp:', [
-            'Status' => $response->getStatusCode(),
-            'Reason' => $response->getReasonPhrase(),
-            'Headers' => $response->getHeaders(),
-            'Body' => strval($response->getBody()),
-        ]);
+        // Log::debug('WechatCorp:', [
+        //     'Status' => $response->getStatusCode(),
+        //     'Reason' => $response->getReasonPhrase(),
+        //     'Headers' => $response->getHeaders(),
+        //     'Body' => strval($response->getBody()),
+        // ]);
         return $response->getBody();
     }
 
