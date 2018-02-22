@@ -160,11 +160,13 @@ class CorpApi
 
     public function getJsapiConfig($url)
     {
+        $start = microtime(true);
         $rt = new JsapiConfig();
         $rt->ticket = $this->getJsapiTicket();
         $rt->signature = sha1(
             "jsapi_ticket={$rt->ticket}&noncestr={$rt->nonce}&timestamp={$rt->timestamp}&url=$url"
         );
+        Log::debug("Time cost in getJsapiConfig: ". (microtime(true) - $start));
         return $rt;
     }
 
@@ -415,14 +417,17 @@ class CorpApi
 	protected function httpGet($url, Array $query)
         {
 		$response = $this->http->request('GET', $url, ['query' => $query]);
-		Log::debug('WechatCorp:', [
-                                'Request: ' => $url,
-                                'Params: ' => $query,
-				'Status' => $response->getStatusCode(),
-				'Reason' => $response->getReasonPhrase(),
-				'Headers' => $response->getHeaders(),
-				'Body' => strval($response->getBody()),
-		]);
+        if($response->getStatusCode()!=200){
+            Log::error('WechatCorp:', [
+                    'Request: '     => $url,
+                    'Params: '      => $query,
+                    'Status'        => $response->getStatusCode(),
+                    'Reason'        => $response->getReasonPhrase(),
+                    'Headers'       => $response->getHeaders(),
+                    'Body'          => strval($response->getBody()),
+            ]);            
+        }
+
 		return $response->getBody();
 	}
 
@@ -431,14 +436,16 @@ class CorpApi
         $response = $this->http->request('POST', $url, [
             'body'  => $body
         ]);
-        Log::debug('WechatCorp:', [
-            'Request: ' => $url,
-            'Body: ' => $body,
-            'Status' => $response->getStatusCode(),
-            'Reason' => $response->getReasonPhrase(),
-            'Headers' => $response->getHeaders(),
-            'Body' => strval($response->getBody()),
-        ]);
+        if($response->getStatusCode()!=200){
+            Log::error('WechatCorp:', [
+                    'Request: '     => $url,
+                    'Params: '      => $query,
+                    'Status'        => $response->getStatusCode(),
+                    'Reason'        => $response->getReasonPhrase(),
+                    'Headers'       => $response->getHeaders(),
+                    'Body'          => strval($response->getBody()),
+            ]);            
+        }
         return $response->getBody();
     }
 
